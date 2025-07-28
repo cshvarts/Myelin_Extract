@@ -43,6 +43,11 @@ def pick_normal_plane(ctr, sk_df):
     closest_idx = distances.idxmin() #Find index of closest point
     parent_idx = sk_df.loc[closest_idx, 'parent'] #Get parent index of that point
     vector_diff = sk_df_vx.loc[closest_idx, ['x', 'y', 'z']].values - sk_df_vx.loc[parent_idx, ['x', 'y', 'z']].values
+
+    #Scale z to match x and y:
+    vector_diff[0:2] *= 4  # Convert x and y to nanometers
+    vector_diff[2] *= 40  # Convert z to nanometers
+    
     max_dim = np.argmax(np.abs(vector_diff)) #find the dimension with the largest difference
     possible_planes = ['yz','xz','xy']
     plane = possible_planes[max_dim]
@@ -118,7 +123,7 @@ def pull_image_and_segmentation(img_client, ctr, pt_root_id, plane, box_sz_micro
 
     return image, segs
 
-def unwrap_image_along_boundary(image, segs, sigma = 3, n_in = 10, n_out = 20, step_size = 0.5):
+def unwrap_image_along_boundary(image, segs, sigma = 3, n_in = 10, n_out = 30, step_size = 0.5):
     """Does normal based unwrapping of the image along boundary of segmentation (cell membrane).
 
     Parameters
@@ -132,7 +137,7 @@ def unwrap_image_along_boundary(image, segs, sigma = 3, n_in = 10, n_out = 20, s
     n_in : int, optional
         Number of samples to take inward from the contour, by default 10.
     n_out : int, optional
-        Number of samples to take outward from the contour, by default 20.
+        Number of samples to take outward from the contour, by default 30.
     step_size : float, optional
         The step size in pixels for sampling along the normal, by default 0.5.
 
@@ -191,3 +196,58 @@ def unwrap_image_along_boundary(image, segs, sigma = 3, n_in = 10, n_out = 20, s
 
         image_unwr[:, i] = samples
     return image_unwr, contour_sm
+
+
+def unwrap_image_given_contour(image, contour_sm, n_in = 10, n_out = 30, step_size = 0.5):
+    """ Helper function if you already have the contour extracted and may want to change params of unwrap.
+    Does normal based unwrapping of the image along boundary given contour.
+
+    Parameters
+    ----------
+    image : np.ndarray
+        The image data to unwrap.
+    contour : np.ndarray
+        The contour around the segmentation. 
+    n_in : int, optional
+        Number of samples to take inward from the contour, by default 10.
+    n_out : int, optional
+        Number of samples to take outward from the contour, by default 30.
+    step_size : float, optional
+        The step size in pixels for sampling along the normal, by default 0.5.
+
+    Returns
+    -------
+    image_unwr : np.ndarray
+        The unwrapped image data, (shape will vary based on contour length).
+    """
+
+    #Do normal based unwrapping to straighten the contour  
+    image_unwr = np.zeros((n_in + n_out + 1, len(contour_sm)))
+
+    # Loop through contour
+    for i, (y, x) in enumerate(contour_sm):
+
+        # Compute tangent: difference between neighboring points
+        prev_pt = contour_sm[i - 1]
+        next_pt = contour_sm[(i + 1) % len(contour_sm)]
+        tangent = next_pt - prev_pt
+
+        # Normalize tangent
+        tangent = tangent / np.linalg.norm(tangent)
+
+        # Normal is perpendicular to tangent: swap and negate
+        normal = np.array([-tangent[1], tangent[0]])
+
+        # Sample along normal
+        samples = []
+        for j in range(-n_in, n_out + 1):
+            offset = normal * j * step_size
+            sample_y = y + offset[0]
+            sample_x = x + offset[1]
+
+            # Use interpolation to get subpixel intensity
+            val = map_coordinates(image, [[sample_y], [sample_x]], order=2, mode='reflect')[0]
+            samples.append(val)
+
+        image_unwr[:, i] = samples
+    return image_unwr
