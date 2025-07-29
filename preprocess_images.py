@@ -6,15 +6,18 @@ from scipy.ndimage import map_coordinates
 from skimage.measure import find_contours
 from scipy.ndimage import gaussian_filter1d
 from matplotlib.path import Path
+import pandas as pd
+
 
 
 def pick_normal_plane(ctr, sk_df):
     """Picks the plane perpendicular to the axon direction at a given point.
+    Gets closest segment
 
     Parameters
     ----------
     ctr : array-like
-        x,y,z coordinates of some point along axon.
+        x,y,z coordinates of some point along axon. In voxel coordinates.
     sk_df : pandas.DataFrame
         DataFrame containing the skeleton data with columns 'x', 'y', 'z', and 'parent'.
         The coordinates should be in microns (should be default when using client.skeleton.get_skeleton)
@@ -25,34 +28,48 @@ def pick_normal_plane(ctr, sk_df):
         The plane that is perpendicular to the axon direction at that point.
         Possible values are 'xy', 'xz', or 'yz'.
     """
+    ctr = np.array(ctr) * np.array([4, 4, 40]) // 1000 # convert ctr to micron coordinates
+    planes = ['yz', 'xz', 'xy']
 
-    #convert sk_df from micron coordinates to voxel coordinates.
-    sk_df_vx = sk_df.copy()
-    sk_df_vx['x'] = sk_df_vx['x']*1000 // 4
-    sk_df_vx['y'] = sk_df_vx['y']*1000 // 4
-    sk_df_vx['z'] = sk_df_vx['z']*1000 // 40
+    # Step 1: Find closest point in sk_df to ctr
+    coords = sk_df[['x', 'y', 'z']].values
+    dists = np.linalg.norm(coords - ctr, axis=1)
+    closest_idx = np.argmin(dists)
 
-    # Compute distances to all points in the skeleton DataFrame
-    distances = np.sqrt(
-        (sk_df_vx['x'] - ctr[0])**2 +
-        (sk_df_vx['y'] - ctr[1])**2 +
-        (sk_df_vx['z'] - ctr[2])**2
-    )
+    # Step 2: Get parent and children of that point
+    connected = []
 
-    #get plane perpendicular to axon
-    closest_idx = distances.idxmin() #Find index of closest point
-    parent_idx = sk_df.loc[closest_idx, 'parent'] #Get parent index of that point
-    vector_diff = sk_df_vx.loc[closest_idx, ['x', 'y', 'z']].values - sk_df_vx.loc[parent_idx, ['x', 'y', 'z']].values
+    # Parent segment
+    parent = sk_df.loc[closest_idx, 'parent']
+    if pd.notna(parent) and int(parent) >= 0:
+        A = sk_df.loc[int(parent), ['x', 'y', 'z']].values
+        B = coords[closest_idx]
+        connected.append((A, B))
 
-    #Scale z to match x and y:
-    vector_diff[0:2] *= 4  # Convert x and y to nanometers
-    vector_diff[2] *= 40  # Convert z to nanometers
-    
-    max_dim = np.argmax(np.abs(vector_diff)) #find the dimension with the largest difference
-    possible_planes = ['yz','xz','xy']
-    plane = possible_planes[max_dim]
+    # Child segments
+    children = sk_df.index[sk_df['parent'] == closest_idx].tolist()
+    for child_idx in children:
+        A = coords[closest_idx]
+        B = sk_df.loc[child_idx, ['x', 'y', 'z']].values
+        connected.append((A, B))
 
-    return plane
+    # Step 3: Find the closest segment among connected ones
+    def closest_segment_dir(A, B):
+        AB = B - A
+        t = np.clip(np.dot(ctr - A, AB) / np.dot(AB, AB), 0, 1)
+        proj = A + t * AB
+        return B - A, np.linalg.norm(ctr - proj)
+
+    direction, _ = min((closest_segment_dir(A, B) for A, B in connected), key=lambda x: x[1])
+
+    # Step 4: Get plane most perpendicular to the direction
+
+    #If 2 nodes are the same or close to each other, might need this.
+    # if np.allclose(direction, 0):
+    #     return None
+
+    main_axis = np.argmax(np.abs(direction))
+    return planes[main_axis]
 
 def pull_image_and_segmentation(img_client, ctr, pt_root_id, plane, box_sz_microns):
     """Pulls the image and segmentation for a given point on an axon, and a chosen plane.
