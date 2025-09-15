@@ -1,8 +1,4 @@
-# Myelin_Extract
-
-
-
-"""# Myelin Extraction Pipeline
+# Myelin Extraction Pipeline
 
 ![Example neurons with myelin shown](example_myelin_vis.png)
 
