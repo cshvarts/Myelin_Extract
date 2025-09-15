@@ -1,6 +1,6 @@
 # Myelin Extraction Pipeline
 
-![Example neurons with myelin shown](example_myelin_vis.png)
+![Example neurons with myelin shown](example_myelin_vis.jpg)
 
 This repository contains tools and pipelines for extracting myelin from the [MICrONS](https://www.microns-explorer.org/) dataset.
 
