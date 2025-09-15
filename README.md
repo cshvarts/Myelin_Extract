@@ -2,7 +2,7 @@
 
 ![Example neurons with myelin shown](example_myelin_vis.png)
 
-This repository contains tools and pipelines for extracting myelin from the [MICrONS](https://www.microns-explorer.org/).
+This repository contains tools and pipelines for extracting myelin from the [MICrONS](https://www.microns-explorer.org/) dataset.
 
 ## Classifier Training
 
