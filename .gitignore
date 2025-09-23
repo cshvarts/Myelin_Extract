@@ -4,3 +4,21 @@ manual_myelin_dataset_2.pkl
 test_0.ipynb
 test_data.pkl
 train_data.pkl
+meshes/
+meshes_downsampled/
+automated_myelin_extract.ipynb
+create_dataset_v1.ipynb
+myelin_info_df.pkl
+recip_connect.ipynb
+scan_4_7_clip.pkl
+segments_myelin.pkl
+visualize_myelin.ipynb
+
+
+
+
+
+#temp ignore:
+myelin_analysis.ipynb
+analyses_lengths_delays.ipynb
+test_activity_analysis.ipynb

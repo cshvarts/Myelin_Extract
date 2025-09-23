@@ -7,6 +7,7 @@ from skimage.measure import find_contours
 from scipy.ndimage import gaussian_filter1d
 from matplotlib.path import Path
 import pandas as pd
+from skimage.transform import resize
 
 
 
@@ -268,3 +269,34 @@ def unwrap_image_given_contour(image, contour_sm, n_in = 10, n_out = 30, step_si
 
         image_unwr[:, i] = samples
     return image_unwr
+
+
+
+def resize_and_add_channel(image_unwr, target_size=(40, 100)):
+    """
+    Resize a single image to the specified target size and add a channel dimension.
+    Goal: To make it dataset ready.
+
+    Parameters:
+    -----------
+    image_unwr : np.ndarray
+        The input image as a NumPy array (grayscale or RGB).
+    
+    target_size : tuple, optional
+        The desired size (height, width) to resize the image to. 
+        Default is (40, 100).
+    
+    Returns:
+    --------
+    np.ndarray
+        The processed image with shape (1, height, width) if grayscale,
+        or (channels, height, width) if RGB (i.e., channel-first format).
+    """
+    
+    # Resize the image to the target size using anti-aliasing
+    resized_img = resize(image_unwr, target_size, anti_aliasing=True)
+
+    # Add a channel dimension (e.g., from (40, 100) to (1, 40, 100))
+    processed_img = np.expand_dims(resized_img, axis=0)
+
+    return processed_img
