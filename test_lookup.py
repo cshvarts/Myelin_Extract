@@ -4,7 +4,7 @@ from caveclient import CAVEclient
 import pandas as pd
 import argparse
 
-def main(scan_dir):
+def main(args):
     print("Testing activity lookup by pt_root_id")
     print("="*60)
 
@@ -28,14 +28,20 @@ def main(scan_dir):
     for i, pt_id in enumerate(sample_pt_root_ids[:5], 1):
         print(f"   {i}. {pt_id}")
 
-    print("\n3. Testing lookup with first 3 pt_root_ids...")
-    test_pt_root_ids = sample_pt_root_ids[:3]
+    if args.debug:
+        print("\n3. Testing lookup with first 3 pt_root_ids...")
+        test_pt_root_ids = sample_pt_root_ids[:3]
+        print(f"   {len(test_pt_root_ids)} pt_root_ids to test")
+    else:
+        test_pt_root_ids = args.pt_root_ids
+        print(f"   {len(test_pt_root_ids)} pt_root_ids to test")
+        print("\n3. Testing lookup with all pt_root_ids...")
 
     # metadata only, fast
     results = lookup_activity_by_pt_root_ids(
         pt_root_ids=test_pt_root_ids,
         coregistration_df=coregistration_df,
-        scan_dir=scan_dir,
+        scan_dir=args.scan_dir,
         return_full_data=False
     )
 
@@ -47,7 +53,7 @@ def main(scan_dir):
     results_full = lookup_activity_by_pt_root_ids(
         pt_root_ids=test_pt_root_ids,
         coregistration_df=coregistration_df,
-        scan_dir=scan_dir,
+        scan_dir=args.scan_dir,
         return_full_data=True
     )
 
@@ -82,5 +88,17 @@ if __name__ == "__main__":
         default="/Users/artliang/Documents/Myelin Plasticity",
         help="Directory containing scan_*_*_coreg.zip files (default: %(default)s)"
     )
+    parser.add_argument(
+        "--debug",
+        type=bool,
+        default=False,
+        help="Whether to run in debug mode (default: %(default)s)"
+    )
+    parser.add_argument(
+        "--pt_root_ids",
+        type=list,
+        default=None,
+        help="List of pt_root_ids to test (default: %(default)s)"
+    )
     args = parser.parse_args()
-    results_meta, results_full = main(args.scan_dir)
+    results_meta, results_full = main(args)
