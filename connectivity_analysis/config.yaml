@@ -1,0 +1,17 @@
+# Null Model Analysis Configuration
+data:
+  adjacency_binary: "data/adjacency_binary_ordered.npy"
+  reciprocal_matrix: "data/reciprocal_matrix.npy"
+
+simulation:
+  n_iterations: 100
+  random_seed: 42
+
+models:
+  erdos_renyi:
+    enabled: true
+    preserve_weights: true
+
+output:
+  save_plots: true
+  verbose: true
