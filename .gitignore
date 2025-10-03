@@ -16,12 +16,16 @@ visualize_myelin.ipynb
 temp.py
 test_0.ipynb
 
+scan_4_7_coreg/
+
 
 
 
 
 
 #temp ignore:
-myelin_analysis.ipynb
-analyses_lengths_delays.ipynb
 test_activity_analysis.ipynb
+experiments/
+
+#too large:
+microns_activity/
