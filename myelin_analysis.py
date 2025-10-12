@@ -216,6 +216,7 @@ def create_synapse_len_delay_df(segs_myelin, segs_info, output_syn_df, cell_type
                 closest_seg_idx = i
                 closest_pt_in_seg_idx = idx_min
         
+
         #get length and delay from synapse to soma.
 
         delay = 0
@@ -250,6 +251,11 @@ def create_synapse_len_delay_df(segs_myelin, segs_info, output_syn_df, cell_type
         delay_unmyel += get_delay_from_l_and_r(path_length, radius, 0)
         # path_leng_from_soma += path_length
 
+        #(GET-AROUND) some unclean dendrites may have "synapses" from incorrect merges. This handles a small number of those in a hacky way.
+        if parent_seg == -1:
+            #this would imply that the synapse is on the soma.
+            continue
+
         #**** Get path length, delays for all parent segments up to soma. *****
         while parent_seg != -1:
             curr_seg = parent_seg
@@ -260,7 +266,7 @@ def create_synapse_len_delay_df(segs_myelin, segs_info, output_syn_df, cell_type
             if parent_seg == -1:
                 root_pt_position = segs[curr_seg]['pt_position'][0] * np.array([4, 4, 40]) / 1000
                 vector_from_soma = syn_position - root_pt_position
-
+        
         #add to dataframe
         synapses_len_delay_df = pd.concat([
             synapses_len_delay_df,
