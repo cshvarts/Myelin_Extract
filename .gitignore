@@ -26,6 +26,11 @@ scan_4_7_coreg/
 #temp ignore:
 test_activity_analysis.ipynb
 experiments/
+auto_myelin_v2.ipynb
 
 #too large:
 microns_activity/
+
+#microenv.
+microns311/
+
